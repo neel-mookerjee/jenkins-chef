@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<org.jfrog.hudson.ArtifactoryBuilder_-DescriptorImpl plugin="artifactory@2.4.7">
+  <useCredentialsPlugin>false</useCredentialsPlugin>
+  <artifactoryServers>
+    <org.jfrog.hudson.ArtifactoryServer>
+      <url>https://artifactory.globalcloudcom/artifactory</url>
+      <id>-289990476@1458167949682</id>
+      <timeout>300</timeout>
+      <bypassProxy>false</bypassProxy>
+      <deployerCredentialsConfig>
+        <credentials>
+          <username>kyle.brill</username>
+          <password>QW5kcmVhMTdQZWRybyE=</password>
+        </credentials>
+        <credentialsId></credentialsId>
+        <overridingCredentials>false</overridingCredentials>
+      </deployerCredentialsConfig>
+    </org.jfrog.hudson.ArtifactoryServer>
+  </artifactoryServers>
+</org.jfrog.hudson.ArtifactoryBuilder_-DescriptorImpl>

@@ -1,0 +1,13 @@
+pairs:
+  # <initials>: <Firstname> <Lastname>[; <email-id>]
+  aa: arghanil.mukhopadhya; arghanil.mukhopadhya
+  rs: Rajitha Schellenberg; rajitha.schellenberg
+  vm: Vikram Malik; vikram.malik
+  kb: Kyle Brill; kyle.brill
+  mm: Marreddy Mallareddygari; marreddy.mallareddyg
+  se: Sarah Ehmann; sarah.ehmann
+  sp: Satish Pahade; satish.pahade
+  ss: Shyam Shrivastava; shyam.shrivastava
+email:
+  prefix: pair
+  domain: .com

@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>cloud-tracing deploy artifact job to release an artifact for a release tag</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>RELEASE_TAG</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PREVIOUS_RELEASE_TAG</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PROJECT_NUMBER</name>
+          <description>SCR - Project Number</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PEER_REVIEWER</name>
+          <description>SCR - Peer Reviewers (comma separated names i.e. pavan.nori, david.jobst)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PROBLEM_DETAILS</name>
+          <description>SCR - Problem Details (Fix/Change details)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>RESOLUTION_DETAILS</name>
+          <description>SCR - Resolution Details (Externalized Configurations)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DEPENDENT_COMPONENTS_AND_SCRS</name>
+          <description>SCR - DEPENDENT_COMPONENTS_AND_SCRS (Comma separated list of component dependencies)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TARGET_PROD_DATE</name>
+          <description>SCR- TARGET_PROD_DATE (date value i.e. 2016-01-01)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>DOWNTIME</name>
+          <description>SCR - Downtime (Is downtime required for SCR deployment i.e. Yes/No)</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url><%= @git_url %></url>
+        <credentialsId>56d80eb5-a544-4671-ac1a-a996b82559c7</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>refs/tags/$RELEASE_TAG</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>
+        #!/bin/bash
+        <% @build_commands.each do |build_command| %>
+            <%= build_command %>
+        <% end %>
+        <% @artifacts.find_all{ |artifact| !artifact.include?('manifest') }.each do |artifact| %>
+            git log $PREVIOUS_RELEASE_TAG..$RELEASE_TAG --oneline > RELEASE-NOTES-$RELEASE_TAG.txt
+
+            USERNAME=${CREDENTIALS%:*}
+            PASSWORD=${CREDENTIALS#*:}
+
+            ENCODED_PASSWORD=`ruby -e "require 'erb'; include ERB::Util; p url_encode('$PASSWORD')"`
+            ENCODED_WITHOUT_QUOTES=${ENCODED_PASSWORD:1:${#ENCODED_PASSWORD}-2}
+
+            rm -rf pipeline
+            mkdir pipeline
+            cd pipeline
+            git clone "https://gitlab.globalcloudcom/pipeline/scr.git"
+            cd scr
+
+            echo "project_number = $PROJECT_NUMBER" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "peer_reviewer = $PEER_REVIEWER" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "problem_details = $PROBLEM_DETAILS" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "resolution_details = $RESOLUTION_DETAILS" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "dependent_components_and_scrs = $DEPENDENT_COMPONENTS_AND_SCRS" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "target_prod_date = $TARGET_PROD_DATE" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+            echo "downtime = $DOWNTIME" >> <%= artifact.split('/').last.split('.').first %>$RELEASE_TAG.txt
+
+            git add .
+            git commit -m "SCR file for <%= artifact.split('/').first %> with $RELEASE_TAG"
+            git pull -r
+            git push https://$USERNAME:$ENCODED_WITHOUT_QUOTES@gitlab.globalcloudcom/pipeline/scr.git
+        <% end %>
+      </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>RELEASE-NOTES-$RELEASE_TAG.txt</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>false</onlyIfSuccessful>
+      <fingerprint>false</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+    </hudson.tasks.ArtifactArchiver>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.7.3"/>
+    <hudson.plugins.ansicolor.AnsiColorBuildWrapper plugin="ansicolor@0.4.1">
+      <colorMapName>xterm</colorMapName>
+    </hudson.plugins.ansicolor.AnsiColorBuildWrapper>
+    <org.jfrog.hudson.generic.ArtifactoryGenericConfigurator plugin="artifactory@2.4.7">
+      <details>
+        <artifactoryName>-289990476@1458167949682</artifactoryName>
+        <artifactoryUrl>https://artifactory.globalcloudcom/artifactory</artifactoryUrl>
+        <deployReleaseRepository>
+          <keyFromText></keyFromText>
+          <keyFromSelect>libs-release-int</keyFromSelect>
+          <dynamicMode>false</dynamicMode>
+        </deployReleaseRepository>
+        <stagingPlugin/>
+      </details>
+      <resolverDetails>
+          <artifactoryName>-289990476@1458167949682</artifactoryName>
+          <artifactoryUrl>https://artifactory.globalcloudcom/artifactory</artifactoryUrl>
+          <stagingPlugin/>
+      </resolverDetails>
+      <deployerCredentialsConfig>
+          <credentials>
+              <username>SVC_OFM_SERVICES</username>
+              <password>KkdLITJtTVQ=</password>
+          </credentials>
+          <credentialsId></credentialsId>
+          <overridingCredentials>true</overridingCredentials>
+      </deployerCredentialsConfig>
+      <resolverCredentialsConfig>
+          <credentials>
+              <username></username>
+              <password></password>
+          </credentials>
+          <credentialsId></credentialsId>
+          <overridingCredentials>false</overridingCredentials>
+      </resolverCredentialsConfig>
+      <deployPattern>
+        <% @artifacts.find_all{|artifact| !artifact.include?('manifest')}.each do |artifact| %>
+          <%= artifact.split('.').first %>-$RELEASE_TAG.<%= artifact.split('.').last %>=&gt;<%= @artifact_deploy_path %>
+        <% end %>
+        <% @artifacts.find_all{|artifact| artifact.include?('manifest')}.each do |artifact| %>
+          <%= artifact %>=&gt;<%= @artifact_deploy_path %>
+        <% end %>
+      </deployPattern>
+      <resolvePattern></resolvePattern>
+      <matrixParams></matrixParams>
+      <deployBuildInfo>true</deployBuildInfo>
+      <includeEnvVars>false</includeEnvVars>
+      <envVarsPatterns>
+        <includePatterns></includePatterns>
+        <excludePatterns>*password*,*secret*</excludePatterns>
+      </envVarsPatterns>
+      <discardOldBuilds>false</discardOldBuilds>
+      <discardBuildArtifacts>true</discardBuildArtifacts>
+      <multiConfProject>false</multiConfProject>
+    </org.jfrog.hudson.generic.ArtifactoryGenericConfigurator>
+    <EnvInjectBuildWrapper plugin="envinject@1.92.1">
+      <info>
+        <propertiesContent>JAVA_HOME=/var/lib/jenkins/jdk1.8.0_31</propertiesContent>
+        <loadFilesFromMaster>false</loadFilesFromMaster>
+      </info>
+    </EnvInjectBuildWrapper>
+    <EnvInjectPasswordWrapper plugin="envinject@1.92.1">
+      <injectGlobalPasswords>false</injectGlobalPasswords>
+      <maskPasswordParameters>true</maskPasswordParameters>
+      <passwordEntries/>
+    </EnvInjectPasswordWrapper>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.8">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordBinding>
+          <credentialsId>56d80eb5-a544-4671-ac1a-a996b82559c7</credentialsId>
+          <variable>CREDENTIALS</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.UsernamePasswordBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+  </buildWrappers>
+</project>

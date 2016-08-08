@@ -1,0 +1,10 @@
+source 'http://berkshelf-api.globalcloudcom'
+
+cookbook 'jenkins-setup', :path => 'site-cookbooks/jenkins-setup'
+cookbook 'package_managers', '~> 0.2.8'
+cookbook 'build-tools', '~> 0.1.0'
+cookbook 'base_packages', '~> 0.1.4'
+cookbook 'selinux', '~> 0.1.1'
+cookbook 'chefdk', '~> 0.1.2'
+cookbook 'xvfb', '~> 0.1.7'
+cookbook 'cert', '~> 0.1.0'

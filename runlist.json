@@ -1,0 +1,13 @@
+{
+  "run_list": [
+    "recipe[package_managers]",
+    "recipe[build-tools]",
+    "recipe[base_packages]",
+    "recipe[selinux]",
+    "recipe[chefdk]",
+    "recipe[xvfb]",
+    "recipe[cert]",
+    "recipe[jenkins-setup]",
+    "role[jenkins]"
+  ]
+}

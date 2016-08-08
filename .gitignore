@@ -1,0 +1,7 @@
+*.iml
+.idea
+cookbooks/*/
+Berksfile.lock
+data_bags/jenkins-setup/passwords.json
+
+.DS_Store
